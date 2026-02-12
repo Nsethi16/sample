@@ -79,6 +79,36 @@ This repo includes `render.yaml`, so use **Blueprint Deploy**:
 6. Redeploy if needed.
 
 Render build/start:
+
+- Build: `pip install -r requirements.txt`
+- Start: `gunicorn app:app`
+
+
+## Browser testing tips
+
+If you test using browser console, avoid assuming every response is JSON. When the server returns an error page, `response.json()` can fail with `Unexpected token '<'`.
+
+Use this safer snippet:
+
+```js
+fetch("https://gotit.onrender.com/ask", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ question: "What is Render?" })
+})
+  .then(async (r) => {
+    const text = await r.text();
+    try {
+      return { status: r.status, data: JSON.parse(text) };
+    } catch {
+      return { status: r.status, data: text };
+    }
+  })
+  .then(console.log)
+  .catch(console.error);
+```
+
+If status is `500/502`, check Render logs and verify `OPENAI_API_KEY` is correctly set in the Render Environment tab.
 python app.py
 ```
 

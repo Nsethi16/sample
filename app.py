@@ -44,6 +44,21 @@ def ask() -> tuple:
     except RuntimeError as exc:
         return jsonify({"error": str(exc)}), 500
 
+    try:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a concise and helpful assistant.",
+                },
+                {"role": "user", "content": question},
+            ],
+        )
+        answer = completion.choices[0].message.content or ""
+        return jsonify({"answer": answer, "model": model}), 200
+    except Exception as exc:  # keep response JSON even when provider errors
+        return jsonify({"error": "OpenAI request failed", "details": str(exc)}), 502
     completion = client.chat.completions.create(
         model=model,
         messages=[
