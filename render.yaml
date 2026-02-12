@@ -1,6 +1,7 @@
 services:
   - type: web
     name: openai-qa-api
+    name: hello-name-api
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt

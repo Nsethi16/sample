@@ -2,6 +2,7 @@ import os
 
 from flask import Flask, jsonify, request
 from openai import OpenAI
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -12,6 +13,13 @@ def get_client() -> OpenAI:
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not set")
     return OpenAI(api_key=api_key)
+@app.get("/hello")
+def hello() -> tuple:
+    """Return a greeting for the provided name query parameter."""
+    name = request.args.get("name", "World").strip()
+    if not name:
+        return jsonify({"error": "Query parameter 'name' is required."}), 400
+    return jsonify({"message": f"Hello {name}"}), 200
 
 
 @app.get("/")
