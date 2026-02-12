@@ -109,6 +109,25 @@ fetch("https://gotit.onrender.com/ask", {
 ```
 
 If status is `500/502`, check Render logs and verify `OPENAI_API_KEY` is correctly set in the Render Environment tab.
+
+
+## Render error fix (`unexpected keyword argument 'proxies'`)
+
+If Render logs show:
+
+- `TypeError: Client.__init__() got an unexpected keyword argument 'proxies'`
+
+this is a dependency mismatch between `openai` and a newer `httpx`.
+
+This repo pins `httpx==0.27.2` to keep compatibility with `openai==1.51.2`.
+
+Also, this repo includes `runtime.txt` to force Python `3.11.9` on Render (your logs showed Python 3.14).
+
+After pulling these changes:
+
+1. Redeploy the service on Render.
+2. Confirm build log shows Python 3.11.9.
+3. Re-test `POST /ask`.
 python app.py
 ```
 
