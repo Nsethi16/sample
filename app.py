@@ -7,8 +7,8 @@ app = Flask(__name__)
 
 
 AGENT_INSTRUCTIONS = (
-    "You are a concise and helpful assistant. "
-    "Use available tools when they improve answer quality."
+    "You are a personal math tutor. When asked a math question, "
+    "write and run code using the python tool to answer the question."
 )
 
 
@@ -37,14 +37,22 @@ def hello() -> tuple:
 
 @app.post("/ask")
 def ask() -> tuple:
+<<<<<<< codex/fix-fetch-request-error-qv346p
+    """Ask a question and get a math-tutor response with code interpreter."""
+=======
     """Ask a question and get an agent-style response with tool support."""
+>>>>>>> main
     body = request.get_json(silent=True) or {}
     question = (body.get("question") or "").strip()
 
     if not question:
         return jsonify({"error": "JSON body field 'question' is required."}), 400
 
+<<<<<<< codex/fix-fetch-request-error-qv346p
+    model = os.getenv("OPENAI_MODEL", "gpt-4.1")
+=======
     model = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+>>>>>>> main
 
     try:
         client = get_client()
@@ -54,12 +62,19 @@ def ask() -> tuple:
     try:
         response = client.responses.create(
             model=model,
-            instructions=AGENT_INSTRUCTIONS,
-            input=question,
             tools=[
+<<<<<<< codex/fix-fetch-request-error-qv346p
+                {
+                    "type": "code_interpreter",
+                    "container": {"type": "auto", "memory_limit": "4g"},
+                }
+=======
                 {"type": "web_search"},
                 {"type": "code_interpreter"},
+>>>>>>> main
             ],
+            instructions=AGENT_INSTRUCTIONS,
+            input=question,
         )
         return jsonify({"answer": response.output_text, "model": model}), 200
         # openai>=1.55 exposes `client.responses`. Older SDKs only support
