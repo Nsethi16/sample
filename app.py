@@ -37,14 +37,14 @@ def hello() -> tuple:
 
 @app.post("/ask")
 def ask() -> tuple:
-    """Ask a question and get an agent-style response with tools enabled."""
+    """Ask a question and get an agent-style response with tool support."""
     body = request.get_json(silent=True) or {}
     question = (body.get("question") or "").strip()
 
     if not question:
         return jsonify({"error": "JSON body field 'question' is required."}), 400
 
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    model = os.getenv("OPENAI_MODEL", "gpt-5-mini")
 
     try:
         client = get_client()
@@ -52,6 +52,16 @@ def ask() -> tuple:
         return jsonify({"error": str(exc)}), 500
 
     try:
+        response = client.responses.create(
+            model=model,
+            instructions=AGENT_INSTRUCTIONS,
+            input=question,
+            tools=[
+                {"type": "web_search"},
+                {"type": "code_interpreter"},
+            ],
+        )
+        return jsonify({"answer": response.output_text, "model": model}), 200
         # openai>=1.55 exposes `client.responses`. Older SDKs only support
         # `chat.completions`, so we gracefully fall back to avoid hard failures.
         if hasattr(client, "responses"):
