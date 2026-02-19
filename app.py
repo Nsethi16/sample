@@ -20,6 +20,17 @@ def get_client() -> OpenAI:
     return OpenAI(api_key=api_key)
 
 
+def build_tools() -> list[dict]:
+    """Build the tools payload for Responses API."""
+    return [
+        {"type": "web_search"},
+        {
+            "type": "code_interpreter",
+            "container": {"type": "auto", "memory_limit": "4g"},
+        },
+    ]
+
+
 @app.get("/")
 def healthcheck() -> tuple:
     """Basic endpoint to verify the API is running."""
@@ -37,14 +48,14 @@ def hello() -> tuple:
 
 @app.post("/ask")
 def ask() -> tuple:
-    """Ask a question and get an agent-style response with tools enabled."""
+    """Ask a question and get an agent-style response with tool support."""
     body = request.get_json(silent=True) or {}
     question = (body.get("question") or "").strip()
 
     if not question:
         return jsonify({"error": "JSON body field 'question' is required."}), 400
 
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    model = os.getenv("OPENAI_MODEL", "gpt-4.1")
 
     try:
         client = get_client()
@@ -56,12 +67,19 @@ def ask() -> tuple:
             model=model,
             instructions=AGENT_INSTRUCTIONS,
             input=question,
-            tools=[
-                {"type": "web_search_preview"},
-                {"type": "code_interpreter"},
-            ],
+            tools=build_tools(),
         )
         return jsonify({"answer": response.output_text, "model": model}), 200
+    except AttributeError:
+        return (
+            jsonify(
+                {
+                    "error": "OpenAI SDK version is too old for Responses API.",
+                    "details": "Upgrade `openai` to >=1.55.0.",
+                }
+            ),
+            500,
+        )
     except Exception as exc:  # Keep response JSON even when provider errors.
         return jsonify({"error": "OpenAI request failed", "details": str(exc)}), 502
 
