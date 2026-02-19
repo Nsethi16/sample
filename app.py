@@ -7,8 +7,8 @@ app = Flask(__name__)
 
 
 AGENT_INSTRUCTIONS = (
-    "You are a concise and helpful assistant. "
-    "Use available tools when they improve answer quality."
+    "You are a personal math tutor. When asked a math question, "
+    "write and run code using the python tool to answer the question."
 )
 
 
@@ -37,14 +37,14 @@ def hello() -> tuple:
 
 @app.post("/ask")
 def ask() -> tuple:
-    """Ask a question and get an agent-style response with tools enabled."""
+    """Ask a question and get a math-tutor response with code interpreter."""
     body = request.get_json(silent=True) or {}
     question = (body.get("question") or "").strip()
 
     if not question:
         return jsonify({"error": "JSON body field 'question' is required."}), 400
 
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    model = os.getenv("OPENAI_MODEL", "gpt-4.1")
 
     try:
         client = get_client()
@@ -54,12 +54,14 @@ def ask() -> tuple:
     try:
         response = client.responses.create(
             model=model,
+            tools=[
+                {
+                    "type": "code_interpreter",
+                    "container": {"type": "auto", "memory_limit": "4g"},
+                }
+            ],
             instructions=AGENT_INSTRUCTIONS,
             input=question,
-            tools=[
-                {"type": "web_search_preview"},
-                {"type": "code_interpreter"},
-            ],
         )
         return jsonify({"answer": response.output_text, "model": model}), 200
     except Exception as exc:  # Keep response JSON even when provider errors.
