@@ -24,7 +24,7 @@ Example response:
 ```json
 {
   "answer": "...",
-  "model": "gpt-4.1"
+  "model": "gpt-5-mini"
 }
 ```
 
@@ -33,7 +33,7 @@ If `question` is missing/empty, API returns HTTP `400`.
 ## Environment variables
 
 - `OPENAI_API_KEY` (**required**) — your OpenAI API key.
-- `OPENAI_MODEL` (optional) — defaults to `gpt-4.1`.
+- `OPENAI_MODEL` (optional) — defaults to `gpt-5-mini`.
 - Uses OpenAI Responses API with `web_search` and `code_interpreter` tools (requires modern `openai` SDK).
 
 ## Local development
@@ -44,7 +44,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 export OPENAI_API_KEY="your_api_key_here"
 # optional:
-# export OPENAI_MODEL="gpt-4.1"
+# export OPENAI_MODEL="gpt-5-mini"
 python app.py
 ```
 
