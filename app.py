@@ -62,6 +62,30 @@ def ask() -> tuple:
             ],
         )
         return jsonify({"answer": response.output_text, "model": model}), 200
+        # openai>=1.55 exposes `client.responses`. Older SDKs only support
+        # `chat.completions`, so we gracefully fall back to avoid hard failures.
+        if hasattr(client, "responses"):
+            response = client.responses.create(
+                model=model,
+                instructions=AGENT_INSTRUCTIONS,
+                input=question,
+                tools=[
+                    {"type": "web_search_preview"},
+                    {"type": "code_interpreter"},
+                ],
+            )
+            answer = response.output_text
+        else:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": AGENT_INSTRUCTIONS},
+                    {"role": "user", "content": question},
+                ],
+            )
+            answer = response.choices[0].message.content
+
+        return jsonify({"answer": answer, "model": model}), 200
     except Exception as exc:  # Keep response JSON even when provider errors.
         return jsonify({"error": "OpenAI request failed", "details": str(exc)}), 502
 
