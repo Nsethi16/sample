@@ -2,9 +2,14 @@ import os
 
 from flask import Flask, jsonify, request
 from openai import OpenAI
-from flask import Flask, jsonify, request
 
 app = Flask(__name__)
+
+
+AGENT_INSTRUCTIONS = (
+    "You are a concise and helpful assistant. "
+    "Use available tools when they improve answer quality."
+)
 
 
 def get_client() -> OpenAI:
@@ -13,6 +18,14 @@ def get_client() -> OpenAI:
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not set")
     return OpenAI(api_key=api_key)
+
+
+@app.get("/")
+def healthcheck() -> tuple:
+    """Basic endpoint to verify the API is running."""
+    return jsonify({"status": "ok"}), 200
+
+
 @app.get("/hello")
 def hello() -> tuple:
     """Return a greeting for the provided name query parameter."""
@@ -22,15 +35,9 @@ def hello() -> tuple:
     return jsonify({"message": f"Hello {name}"}), 200
 
 
-@app.get("/")
-def healthcheck() -> tuple:
-    """Basic endpoint to verify the API is running."""
-    return jsonify({"status": "ok"}), 200
-
-
 @app.post("/ask")
 def ask() -> tuple:
-    """Ask a question and get an AI-generated response."""
+    """Ask a question and get an agent-style response with tools enabled."""
     body = request.get_json(silent=True) or {}
     question = (body.get("question") or "").strip()
 
@@ -45,33 +52,18 @@ def ask() -> tuple:
         return jsonify({"error": str(exc)}), 500
 
     try:
-        completion = client.chat.completions.create(
+        response = client.responses.create(
             model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a concise and helpful assistant.",
-                },
-                {"role": "user", "content": question},
+            instructions=AGENT_INSTRUCTIONS,
+            input=question,
+            tools=[
+                {"type": "web_search_preview"},
+                {"type": "code_interpreter"},
             ],
         )
-        answer = completion.choices[0].message.content or ""
-        return jsonify({"answer": answer, "model": model}), 200
-    except Exception as exc:  # keep response JSON even when provider errors
+        return jsonify({"answer": response.output_text, "model": model}), 200
+    except Exception as exc:  # Keep response JSON even when provider errors.
         return jsonify({"error": "OpenAI request failed", "details": str(exc)}), 502
-    completion = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a concise and helpful assistant.",
-            },
-            {"role": "user", "content": question},
-        ],
-    )
-
-    answer = completion.choices[0].message.content or ""
-    return jsonify({"answer": answer, "model": model}), 200
 
 
 if __name__ == "__main__":
